@@ -74,7 +74,14 @@ def lissajous(t,a,b):
     y = 1.0 * np.sin(b*t)
     return np.array([x,y])
 
-periods = 5.0
+def hypotrochoid(t,k,l):
+    """https://en.wikipedia.org/wiki/Spirograph"""
+    x = (1.0-k)*np.cos(t) + k*l*np.cos((1.0-k)*t/k)
+    y = (1.0-k)*np.sin(t) - k*l*np.sin((1.0-k)*t/k)
+    return np.array([x,y])
+
+periods = 10.0
+R = 1.0
 x = np.linspace(0,1,101)
 t = np.linspace(0,2.0*np.pi*periods,501)
 delta = 0.0
@@ -82,19 +89,19 @@ delta = 0.0
 # ax.plot(Gamma,np.ones(len(Gamma)),color='black',ls='-',lw=2)
 # ax.plot(Gamma,Gamma+1,color='black',ls='--',lw=2)
 
-ax.set_xlabel(r"$a$")
-ax.set_ylabel(r"$b$")
+ax.set_xlabel(r"$k = $ inner radius / outer radius")
+ax.set_ylabel(r"$l$")
 
 pos.x_min = 0.0
-pos.x_max = 4.0
+pos.x_max = 2.0
 pos.y_min = 0.0
-pos.y_max = 4.0
+pos.y_max = 2.0
 pos.x_scaling = 0.3
 pos.y_scaling = 0.3
 ax.axis([pos.x_min,pos.x_max,pos.y_min,pos.y_max])
 
-ax.set_xticks(np.arange(0,4.5,0.5))
-ax.set_yticks(np.arange(0,4.5,0.5))
+ax.set_xticks(np.arange(0,2.5,0.2))
+ax.set_yticks(np.arange(0,2.5,0.2))
 
 class MouseBeta(object):
     def __init__(self, ax, **kwargs):
@@ -102,7 +109,7 @@ class MouseBeta(object):
         self.x = np.linspace(0,1,101)
         self.t = np.linspace(0,2.0*np.pi*periods,501)
         # self.curve = lambda a,b: beta_dist(self.x,a+1.0,b)
-        self.curve = lambda a,b: lissajous(self.t,a,b)
+        self.curve = lambda k,l: hypotrochoid(self.t,k,l)
         # self.scaling = [pos.x_scaling,pos.y_scaling]
         self.line, = self.ax.plot(self.curve(0,0)[0]*pos.x_scaling,
                                   self.curve(0,0)[1]*pos.y_scaling,
@@ -111,8 +118,10 @@ class MouseBeta(object):
         return a*self.x + b*self.x**2
     def show_beta(self, event):
         if event.inaxes == self.ax:
-            self.line.set_data(event.xdata+(self.curve(event.xdata,event.ydata)[0]-0*pos.x_scaling)*pos.x_scaling, 
-                               event.ydata+(self.curve(event.xdata,event.ydata)[1]-0*pos.y_scaling)*pos.y_scaling)
+            c = self.curve(event.xdata,event.ydata)
+            rescale = 1.0 #np.max([R, R + event.xdata])
+            self.line.set_data(event.xdata+(c[0]/rescale-0*pos.x_scaling)*pos.x_scaling, 
+                               event.ydata+(c[1]/rescale-0*pos.y_scaling)*pos.y_scaling)
             self.line.set_visible(True)
         else:
             self.line.set_visible(False)
@@ -129,7 +138,7 @@ def insert_window(ax,pos,pair,x):
     pos_x_window = ((pair[0]-pos.x_min)/(pos.x_max-pos.x_min)) * (pos.right-pos.left) + pos.left - ax2sizeX/2.0
     pos_y_window = ((pair[1]-pos.y_min)/(pos.y_max-pos.y_min)) * (pos.top-pos.bottom) + pos.bottom - ax2sizeY/fig_ratio/2.0/Ystretch
     ax2 = fig.add_axes([pos_x_window, pos_y_window, ax2sizeX, ax2sizeY/fig_ratio],frameon=False)
-    curve = lissajous(t,pair[0], pair[1])
+    curve = hypotrochoid(t,pair[0], pair[1])
     ax2.axis([0,1,0,Ystretch])
     ax2.plot(curve[0],curve[1])
     # ax2.fill_between(x, curve, y2=0, edgecolor='None', color='blue',alpha=0.3)
